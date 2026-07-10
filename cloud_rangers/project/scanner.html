@@ -8,48 +8,111 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="dashboard-styles.css">
+    <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="stylesheet" href="assets/css/dashboard-styles.css">
     <style>
         .scanner-page {
-            background: var(--gray-900);
+            position: relative;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             padding: 2rem;
+            overflow: hidden;
+            background:
+                radial-gradient(circle at top left, rgba(16, 185, 129, 0.22), transparent 28%),
+                radial-gradient(circle at bottom right, rgba(34, 211, 238, 0.16), transparent 24%),
+                linear-gradient(135deg, #07120d 0%, #101827 55%, #1f2937 100%);
+        }
+
+        .scanner-page::before,
+        .scanner-page::after {
+            content: '';
+            position: absolute;
+            inset: auto;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.5;
+            animation: floatGlow 10s ease-in-out infinite alternate;
+            pointer-events: none;
+        }
+
+        .scanner-page::before {
+            width: 280px;
+            height: 280px;
+            left: -80px;
+            top: -40px;
+            background: rgba(16, 185, 129, 0.24);
+        }
+
+        .scanner-page::after {
+            width: 320px;
+            height: 320px;
+            right: -40px;
+            bottom: -90px;
+            background: rgba(34, 211, 238, 0.18);
+            animation-duration: 12s;
         }
 
         .scanner-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border-radius: 24px;
+            position: relative;
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(24px);
+            border-radius: 28px;
             padding: 2rem;
-            max-width: 600px;
+            max-width: 640px;
             width: 100%;
             text-align: center;
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.36);
+            animation: cardRise 0.7s ease both;
+            overflow: hidden;
+        }
+
+        .scanner-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(120deg, rgba(255,255,255,0.12), transparent 50%, rgba(255,255,255,0.08));
+            pointer-events: none;
         }
 
         .scanner-header h1 {
-            font-size: 1.8rem;
-            font-weight: 700;
+            font-size: 1.9rem;
+            font-weight: 800;
             color: #fff;
             margin-bottom: 0.5rem;
         }
 
         .scanner-header p {
-            color: rgba(255, 255, 255, 0.6);
-            margin-bottom: 1.5rem;
+            color: rgba(255, 255, 255, 0.73);
+            margin-bottom: 1.25rem;
+            font-size: 0.95rem;
+        }
+
+        .scanner-hint {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.55rem 0.9rem;
+            border-radius: 999px;
+            background: rgba(16, 185, 129, 0.14);
+            border: 1px solid rgba(16, 185, 129, 0.26);
+            color: #d1fae5;
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+            animation: pulseSoft 2.2s ease-in-out infinite;
         }
 
         #video-container {
             position: relative;
-            border-radius: 16px;
+            border-radius: 20px;
             overflow: hidden;
             background: #000;
             aspect-ratio: 4/3;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.18), 0 18px 40px rgba(0, 0, 0, 0.35);
         }
 
         #video {
@@ -72,10 +135,10 @@
         }
 
         .scan-area {
-            width: 65%;
+            width: 68%;
             aspect-ratio: 1;
             border: 3px solid var(--primary-emerald);
-            border-radius: 16px;
+            border-radius: 20px;
             box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
             animation: scanPulse 2s ease-in-out infinite;
         }
@@ -121,13 +184,15 @@
             bottom: 1rem;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.82);
             color: #fff;
-            padding: 0.5rem 1.5rem;
-            border-radius: 50px;
+            padding: 0.6rem 1.15rem;
+            border-radius: 999px;
             font-size: 0.875rem;
             white-space: nowrap;
             backdrop-filter: blur(10px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.22);
+            animation: pulseSoft 2s ease-in-out infinite;
         }
 
         .manual-input-area {
@@ -209,21 +274,29 @@
 
         .method-tab {
             flex: 1;
-            padding: 0.6rem;
-            background: rgba(255, 255, 255, 0.05);
+            padding: 0.7rem;
+            background: rgba(255, 255, 255, 0.06);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            color: rgba(255, 255, 255, 0.6);
+            border-radius: 12px;
+            color: rgba(255, 255, 255, 0.7);
             font-size: 0.8rem;
             cursor: pointer;
-            transition: all 0.3s;
-            font-weight: 500;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            transform: translateY(0);
+        }
+
+        .method-tab:hover {
+            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
         }
 
         .method-tab.active {
-            background: rgba(16, 185, 129, 0.15);
+            background: rgba(16, 185, 129, 0.16);
             border-color: var(--primary-emerald);
             color: var(--primary-emerald-light);
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.16);
         }
 
         .method-panel {
@@ -232,6 +305,52 @@
 
         .method-panel.active {
             display: block;
+            animation: fadeUp 0.35s ease;
+        }
+
+        @keyframes floatGlow {
+            0% {
+                transform: translate3d(0, 0, 0) scale(1);
+            }
+
+            100% {
+                transform: translate3d(20px, -16px, 0) scale(1.08);
+            }
+        }
+
+        @keyframes cardRise {
+            from {
+                opacity: 0;
+                transform: translateY(16px) scale(0.98);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulseSoft {
+            0%,
+            100% {
+                transform: translateX(-50%) scale(1);
+            }
+
+            50% {
+                transform: translateX(-50%) scale(1.02);
+            }
         }
     </style>
 </head>
@@ -244,13 +363,14 @@
             <div class="scanner-header">
                 <h1>📷 Scan Product</h1>
                 <p>Point your camera at a barcode, enter it manually, or upload an image</p>
+                <div class="scanner-hint"><i class="bi bi-shield-check"></i> Camera opens automatically and scans as soon as a barcode is found.</div>
             </div>
 
             <div class="scanner-methods">
-                <button class="method-tab active" onclick="switchTab('camera')"><i class="bi bi-camera"></i>
+                <button class="method-tab active" data-tab="camera" onclick="switchTab('camera')"><i class="bi bi-camera"></i>
                     Camera</button>
-                <button class="method-tab" onclick="switchTab('manual')"><i class="bi bi-keyboard"></i> Manual</button>
-                <button class="method-tab" onclick="switchTab('image')"><i class="bi bi-image"></i> Image</button>
+                <button class="method-tab" data-tab="manual" onclick="switchTab('manual')"><i class="bi bi-keyboard"></i> Manual</button>
+                <button class="method-tab" data-tab="image" onclick="switchTab('image')"><i class="bi bi-image"></i> Image</button>
             </div>
 
             <!-- Camera Tab -->
@@ -263,7 +383,7 @@
                     </div>
                     <div id="scan-status">🔍 Searching for barcode...</div>
                 </div>
-                <p class="text-muted small mt-2">Auto-detects and redirects instantly when a barcode is found.</p>
+                <p class="text-muted small mt-2">The camera will request permission once and begin scanning automatically.</p>
             </div>
 
             <!-- Manual Tab -->
@@ -289,68 +409,7 @@
     </div>
 
     <script src="https://unpkg.com/@zxing/library@0.20.0/umd/index.min.js"></script>
-    <script>
-        let codeReader = null;
-
-        function switchTab(tab) {
-            document.querySelectorAll('.method-tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.method-panel').forEach(p => p.classList.remove('active'));
-            event.target.classList.add('active');
-            document.getElementById('panel-' + tab).classList.add('active');
-            if (tab === 'camera') startCamera();
-            else stopCamera();
-        }
-
-        function startCamera() {
-            if (codeReader) return;
-            codeReader = new ZXing.BrowserMultiFormatReader();
-            const video = document.getElementById('video');
-            codeReader.listVideoInputDevices().then(devices => {
-                const deviceId = devices[0]?.deviceId;
-                if (!deviceId) { document.getElementById('scan-status').textContent = '❌ No camera found.'; return; }
-                codeReader.decodeFromVideoDevice(deviceId, video, (result, err) => {
-                    if (result) {
-                        document.getElementById('scan-status').textContent = '✅ Barcode found! Redirecting...';
-                        localStorage.setItem('scannedBarcode', result.text);
-                        setTimeout(() => window.location.href = 'product-result.html', 500);
-                    }
-                });
-            }).catch(err => {
-                document.getElementById('scan-status').textContent = '❌ Camera access denied.';
-            });
-        }
-
-        function stopCamera() {
-            if (codeReader) { codeReader.reset(); codeReader = null; }
-        }
-
-        function goWithBarcode() {
-            const barcode = document.getElementById('manualBarcodeInput').value.trim();
-            if (!barcode) { alert('Please enter a barcode number.'); return; }
-            localStorage.setItem('scannedBarcode', barcode);
-            window.location.href = 'product-result.html';
-        }
-
-        document.getElementById('manualBarcodeInput').addEventListener('keydown', e => {
-            if (e.key === 'Enter') goWithBarcode();
-        });
-
-        function handleImageUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = e => {
-                const base64Str = e.target.result.split(',')[1];
-                localStorage.setItem('scannedImageBase64', base64Str);
-                localStorage.removeItem('scannedBarcode');
-                window.location.href = 'product-result.html';
-            };
-            reader.readAsDataURL(file);
-        }
-
-        // Start camera on load
-        startCamera();
-    </script>
+    <script src="assets/js/scanner.js"></script>
 </body>
 
 </html>

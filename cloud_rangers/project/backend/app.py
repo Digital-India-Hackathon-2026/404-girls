@@ -42,7 +42,7 @@ class AnalysisRequest(BaseModel):
     ingredients: List[str]
     risks: List[dict]
 
-@app.get("/api/product/{barcode}")
+@app.api_route("/api/product/{barcode}", methods=["GET", "POST"])
 async def get_product(barcode: str):
     print(f"Fetching product: {barcode}")
     raw_data = lookup_product(barcode)
@@ -85,8 +85,10 @@ async def analyze_product(request: AnalysisRequest):
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
-# Mount frontend
-frontend_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend")
+# Mount frontend from the project root so the scanner and product pages are served correctly
+frontend_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+assets_path = os.path.join(frontend_path, "assets")
+app.mount("/assets", StaticFiles(directory=assets_path), name="assets")
 app.mount("/static", StaticFiles(directory=frontend_path), name="static")
 
 @app.get("/")

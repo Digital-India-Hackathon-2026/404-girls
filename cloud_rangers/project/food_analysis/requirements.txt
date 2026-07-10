@@ -1,8 +1,0 @@
-streamlit
-pandas
-pillow
-opencv-python-headless
-pyzbar
-openfoodfacts
-google-generativeai
-requests
