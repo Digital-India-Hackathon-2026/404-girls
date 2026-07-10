@@ -1,6 +1,6 @@
-# Label Padegha Sabh
+# Label Padega Sabh
 
-Welcome to the **Label Padegha Sabh** repository.
+Welcome to the **Label Padega Sabh** repository.
 
 This repository contains the source code, assets, and documentation for the project developed during the hackathon.
 
