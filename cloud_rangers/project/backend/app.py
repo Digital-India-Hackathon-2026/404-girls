@@ -269,7 +269,7 @@ def news_endpoint(product_name: str, max_articles: int = 10):
 def chat_endpoint(request: ChatRequest):
     from config import get_api_key
     api_key = get_api_key("gemini")
-    is_placeholder = not api_key or "your_gemini_api_key_here" in api_key or len(api_key) < 20
+    is_placeholder = not api_key or "" in api_key or len(api_key) < 20
 
     if not gemini or is_placeholder:
         # Return a specific error code so frontend knows AI is not available
