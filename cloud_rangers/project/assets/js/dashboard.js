@@ -59,3 +59,29 @@ document.addEventListener('DOMContentLoaded', () => {
         navbarSearchInput.addEventListener('focus', showManualSearch);
     }
 });
+
+// Reset State Department Modal dropdown when shown
+document.addEventListener('DOMContentLoaded', () => {
+    const modalEl = document.getElementById('stateDepartmentModal');
+    if (modalEl) {
+        modalEl.addEventListener('show.bs.modal', () => {
+            const select = document.getElementById('stateSelect');
+            const placeholder = document.getElementById('stateContactPlaceholder');
+            if (select) select.value = '';
+            if (placeholder) placeholder.style.display = 'none';
+        });
+    }
+});
+
+// Handle State Selection
+function handleStateSelection() {
+    const select = document.getElementById('stateSelect');
+    const placeholder = document.getElementById('stateContactPlaceholder');
+    if (select && placeholder) {
+        if (select.value) {
+            placeholder.style.display = 'block';
+        } else {
+            placeholder.style.display = 'none';
+        }
+    }
+}

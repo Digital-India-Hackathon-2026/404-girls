@@ -239,6 +239,10 @@ function renderFullAnalysis(analysisData, profile) {
     if (!profile) profile = {};
     evalLog('🎨 renderFullAnalysis — product: ' + (analysisData.product && analysisData.product.name));
 
+    // Save active state globally for filters, sorting, search & exports
+    window.activeAnalysisData = analysisData;
+    window.activeAdditiveReport = analysisData.additive_regulatory_report || [];
+
     var container = document.getElementById('productContainer');
     if (!container) {
         evalLog('❌ productContainer element not found!', 'error');
@@ -278,8 +282,8 @@ function renderFullAnalysis(analysisData, profile) {
         var circumference = 2 * Math.PI * 52;
         var fillOffset    = circumference - (score / 100) * circumference;
 
-        // ── Factor 3: Ingredient Explanations ──
-        var ingExplHtml = '';
+        // ── Factor 3: Ingredient Explanations (Collapsible v4.2) ──
+        var ingExplHtml = '<div class="ingredients-collapsed-container" id="ingredientsCollapseContainer">';
         if (ingredientExplanations.length > 0) {
             for (var i = 0; i < ingredientExplanations.length; i++) {
                 var ing      = ingredientExplanations[i];
@@ -287,16 +291,42 @@ function renderFullAnalysis(analysisData, profile) {
                 if (ing.category === 'Preservative' || ing.category === 'Colour') riskClass = 'risk-high';
                 else if (ing.category === 'Sweetener' || ing.category === 'Flavour Enhancer') riskClass = 'risk-moderate';
 
-                ingExplHtml += '<div class="ingredient-card ' + riskClass + '">';
-                ingExplHtml += '<p class="ing-name">' + escHtml(ing.name || '') + '</p>';
+                var isAdditive = false;
+                var insLabel = '';
+                if (analysisData.additive_regulatory_report) {
+                    var match = analysisData.additive_regulatory_report.find(function(a) {
+                        return a.name.toLowerCase() === ing.name.toLowerCase() || 
+                               (ing.simple_name && a.name.toLowerCase() === ing.simple_name.toLowerCase()) ||
+                               ing.name.toLowerCase().includes(a.name.toLowerCase());
+                    });
+                    if (match) {
+                        isAdditive = true;
+                        insLabel = match.ins_no;
+                    }
+                }
+
+                var clickAttr = ' onclick="showIngredientModal(' + i + ')"';
+
+                ingExplHtml += '<div class="ingredient-card ' + riskClass + ' ingredient-chip-interactive" ' + clickAttr + '>';
+                ingExplHtml += '<p class="ing-name">' + escHtml(ing.name || '') + ' ';
+                if (isAdditive) {
+                    ingExplHtml += '<span class="badge bg-warning text-dark ms-2" style="font-size:10px;"><i class="bi bi-shield-exclamation me-1"></i>Additive ' + escHtml(insLabel) + '</span>';
+                }
+                ingExplHtml += '</p>';
                 if (ing.simple_name) ingExplHtml += '<p class="ing-purpose"><strong>Also known as:</strong> ' + escHtml(ing.simple_name) + '</p>';
                 if (ing.purpose)     ingExplHtml += '<p class="ing-purpose"><strong>Purpose:</strong> ' + escHtml(ing.purpose) + '</p>';
-                if (ing.description) ingExplHtml += '<p class="ing-purpose">' + escHtml(ing.description) + '</p>';
-                if (ing.category)    ingExplHtml += '<span class="tag-pill">' + escHtml(ing.category) + '</span>';
+                if (ing.description) ingExplHtml += '<p class="ing-purpose text-truncate">' + escHtml(ing.description) + '</p>';
+                if (ing.category)    ingExplHtml += '<span class="tag-pill mt-2">' + escHtml(ing.category) + '</span>';
                 ingExplHtml += '</div>';
             }
         } else {
-            ingExplHtml = '<p class="text-muted">No ingredient data available.</p>';
+            ingExplHtml += '<p class="text-muted">No ingredient data available.</p>';
+        }
+        ingExplHtml += '<div class="ingredients-fade-overlay" id="ingredientsFadeOverlay"></div>';
+        ingExplHtml += '</div>';
+
+        if (ingredientExplanations.length > 3) {
+            ingExplHtml += '<button class="toggle-ingredients-btn" id="toggleIngredientsBtn" onclick="toggleIngredientsExpand()"><i class="bi bi-chevron-down"></i> Read More</button>';
         }
 
         // ── Factor 4: Allergen Alerts ──
@@ -470,10 +500,14 @@ function renderFullAnalysis(analysisData, profile) {
         html += '<div><h3>Personalized Warnings</h3><p class="factor-subtitle">Based on your health profile</p></div></div>';
         html += '<div class="factor-body">' + warningsHtml + '</div></div>';
 
-        // ── Factor 6: Global Regulatory Status ──
-        html += '<div class="factor-detail-card fade-in-up stagger-6">';
+        // ── Factor 6: Global Regulatory Status (Interactive bottom-sheet v4.2) ──
+        // Store regulatory HTML in global variable
+        window.activeRegulatoryHtml = regHtml;
+
+        html += '<div class="factor-detail-card fade-in-up stagger-6" style="cursor:pointer;" onclick="openRegulatoryBottomSheet()">';
         html += '<div class="factor-header"><div class="factor-icon-lg" style="background:linear-gradient(135deg,#8B5CF6,#7C3AED);"><i class="bi bi-globe-americas"></i></div>';
-        html += '<div><h3>Global Regulatory Status</h3><p class="factor-subtitle">Cross-country compliance for detected ingredients</p></div></div>';
+        html += '<div><h3>Global Regulatory Status</h3><p class="factor-subtitle">Click to view cross-country compliance and additive safety report</p></div>';
+        html += '<div class="ms-auto text-muted"><i class="bi bi-chevron-right fs-4"></i></div></div>';
         html += '<div class="factor-body">' + regHtml + '</div></div>';
 
         // ── Safety Alerts & Recalls ──
@@ -632,4 +666,462 @@ function buildNutritionTable(nutrition) {
         return '<p class="text-muted">No nutrition data available for this product.</p>';
     }
     return '<div class="nutriment-table">' + rows + '</div>';
+}
+
+// ═══════════════════════════════════════════════════════════
+// ADDITIVE SAFETY & COLLAPSE SCRIPTS (v4.2)
+// ═══════════════════════════════════════════════════════════
+
+function toggleIngredientsExpand() {
+    var container = document.getElementById('ingredientsCollapseContainer');
+    var btn = document.getElementById('toggleIngredientsBtn');
+    var overlay = document.getElementById('ingredientsFadeOverlay');
+    if (!container || !btn) return;
+    
+    if (container.classList.contains('expanded')) {
+        container.classList.remove('expanded');
+        if (overlay) overlay.style.display = 'block';
+        btn.innerHTML = '<i class="bi bi-chevron-down"></i> Read More';
+    } else {
+        container.classList.add('expanded');
+        if (overlay) overlay.style.display = 'none';
+        btn.innerHTML = '<i class="bi bi-chevron-up"></i> Show Less';
+    }
+}
+
+function showIngredientModal(index) {
+    var data = window.activeAnalysisData;
+    if (!data || !data.ingredient_explanations || !data.ingredient_explanations[index]) return;
+    var ing = data.ingredient_explanations[index];
+    
+    var body = document.getElementById('ingredientDetailModalBody');
+    if (!body) return;
+    
+    var html = '';
+    html += '<h4 class="mb-2" style="font-weight:800;color:var(--gray-900);">' + escHtml(ing.name) + '</h4>';
+    if (ing.simple_name) {
+        html += '<p class="text-muted mb-3" style="font-size:14px;"><strong>Also known as:</strong> ' + escHtml(ing.simple_name) + '</p>';
+    }
+    
+    var badgeClass = 'bg-success';
+    if (ing.category === 'Preservative' || ing.category === 'Colour') badgeClass = 'bg-danger';
+    else if (ing.category === 'Sweetener' || ing.category === 'Flavour Enhancer') badgeClass = 'bg-warning text-dark';
+    
+    html += '<div class="d-flex gap-2 mb-4">';
+    if (ing.category) {
+        html += '<span class="badge ' + badgeClass + ' px-3 py-2" style="border-radius:50px; font-size:11px;">' + escHtml(ing.category) + '</span>';
+    }
+    
+    var additive = (data.additive_regulatory_report || []).find(function(a) {
+        return a.name.toLowerCase() === ing.name.toLowerCase() || 
+               (ing.simple_name && a.name.toLowerCase() === ing.simple_name.toLowerCase()) ||
+               ing.name.toLowerCase().includes(a.name.toLowerCase());
+    });
+    
+    if (additive) {
+        html += '<span class="badge bg-dark px-3 py-2" style="border-radius:50px; font-size:11px;">INS ' + escHtml(additive.ins_no) + '</span>';
+    }
+    html += '</div>';
+    
+    if (ing.purpose) {
+        html += '<div class="mb-3"><strong>Purpose / Function:</strong><p class="text-muted mt-1" style="font-size:13px;">' + escHtml(ing.purpose) + '</p></div>';
+    }
+    if (ing.description) {
+        html += '<div class="mb-3"><strong>Health &amp; Safety Description:</strong><p class="text-muted mt-1" style="line-height:1.6; font-size:13px;">' + escHtml(ing.description) + '</p></div>';
+    }
+    
+    if (additive) {
+        html += '<hr>';
+        html += '<h6 class="mb-3" style="font-weight:700;"><i class="bi bi-shield-check text-success me-1"></i>Regulatory Summary</h6>';
+        html += '<ul class="list-group list-group-flush mb-4" style="font-size:13px;">';
+        html += '<li class="list-group-item d-flex justify-content-between align-items-center py-2 px-0 bg-transparent"><span>India (FSSAI)</span><span class="badge ' + getStatusBadgeClass(additive.countries["India (FSSAI)"].status) + '">' + additive.countries["India (FSSAI)"].status + '</span></li>';
+        html += '<li class="list-group-item d-flex justify-content-between align-items-center py-2 px-0 bg-transparent"><span>USA (FDA)</span><span class="badge ' + getStatusBadgeClass(additive.countries["USA (FDA)"].status) + '">' + additive.countries["USA (FDA)"].status + '</span></li>';
+        html += '<li class="list-group-item d-flex justify-content-between align-items-center py-2 px-0 bg-transparent"><span>European Union</span><span class="badge ' + getStatusBadgeClass(additive.countries["European Union (EFSA)"].status) + '">' + additive.countries["European Union (EFSA)"].status + '</span></li>';
+        html += '</ul>';
+        html += '<div class="text-center mt-3">';
+        html += '<button class="btn btn-sm" style="border-radius:50px; background:var(--gradient-primary); color:#fff; border:none;" onclick="closeAllModalsAndOpenRegBottomSheet()"><i class="bi bi-file-earmark-bar-graph me-1"></i>View Full Additive Report</button>';
+        html += '</div>';
+    }
+    
+    body.innerHTML = html;
+    var modal = new bootstrap.Modal(document.getElementById('ingredientDetailModal'));
+    modal.show();
+}
+
+function getStatusBadgeClass(status) {
+    if (status === 'Approved') return 'bg-success';
+    if (status === 'Restricted') return 'bg-warning text-dark';
+    if (status === 'Banned') return 'bg-danger';
+    return 'bg-secondary';
+}
+
+function closeAllModalsAndOpenRegBottomSheet() {
+    var ingModalEl = document.getElementById('ingredientDetailModal');
+    var ingModal = bootstrap.Modal.getInstance(ingModalEl);
+    if (ingModal) ingModal.hide();
+    
+    openRegulatoryBottomSheet();
+    
+    var tabEl = document.getElementById('additive-report-tab');
+    var tab = new bootstrap.Tab(tabEl);
+    tab.show();
+}
+
+function openRegulatoryBottomSheet() {
+    var targetContainer = document.getElementById('foodRegulationsTabContent');
+    if (targetContainer) {
+        targetContainer.innerHTML = window.activeRegulatoryHtml || '<p class="text-muted">No verified regulatory information available.</p>';
+    }
+    
+    renderAdditiveReport();
+    
+    var modalEl = document.getElementById('regulatoryBottomSheet');
+    var modal = bootstrap.Modal.getInstance(modalEl);
+    if (!modal) {
+        modal = new bootstrap.Modal(modalEl);
+    }
+    modal.show();
+}
+
+function renderAdditiveReport() {
+    var additives = window.activeAdditiveReport || [];
+    var searchVal = (document.getElementById('additiveSearchInput') ? document.getElementById('additiveSearchInput').value.toLowerCase() : '').trim();
+    var filterCountryVal = document.getElementById('filterCountry') ? document.getElementById('filterCountry').value : '';
+    var filterStatusVal = document.getElementById('filterStatus') ? document.getElementById('filterStatus').value : '';
+    var filterRiskVal = document.getElementById('filterRisk') ? document.getElementById('filterRisk').value : '';
+    var sortVal = document.getElementById('sortAdditives') ? document.getElementById('sortAdditives').value : 'alphabetical';
+
+    var filtered = additives.filter(function(a) {
+        var matchesSearch = !searchVal || 
+                            a.name.toLowerCase().includes(searchVal) || 
+                            a.ins_no.toLowerCase().includes(searchVal) ||
+                            a.category.toLowerCase().includes(searchVal);
+        
+        var matchesCountryAndStatus = true;
+        if (filterCountryVal) {
+            var cData = a.countries[filterCountryVal];
+            if (!cData) {
+                matchesCountryAndStatus = false;
+            } else if (filterStatusVal && cData.status !== filterStatusVal) {
+                matchesCountryAndStatus = false;
+            }
+        } else if (filterStatusVal) {
+            var statuses = Object.values(a.countries).map(function(c) { return c.status; });
+            if (!statuses.includes(filterStatusVal)) {
+                matchesCountryAndStatus = false;
+            }
+        }
+        
+        var matchesRisk = !filterRiskVal || a.risk_level === filterRiskVal;
+
+        return matchesSearch && matchesCountryAndStatus && matchesRisk;
+    });
+
+    filtered.sort(function(x, y) {
+        if (sortVal === 'alphabetical') {
+            return x.name.localeCompare(y.name);
+        } else if (sortVal === 'risk-desc') {
+            var riskWeight = { "High Risk": 3, "Moderate Risk": 2, "Low Risk": 1 };
+            return (riskWeight[y.risk_level] || 0) - (riskWeight[x.risk_level] || 0);
+        } else if (sortVal === 'strictness') {
+            var getStrictnessScore = function(item) {
+                var score = 0;
+                Object.values(item.countries).forEach(function(c) {
+                    if (c.status === 'Banned') score += 5;
+                    else if (c.status === 'Restricted') score += 2;
+                });
+                return score;
+            };
+            return getStrictnessScore(y) - getStrictnessScore(x);
+        }
+        return 0;
+    });
+
+    renderAdditiveStats(additives);
+
+    var listContainer = document.getElementById('additiveReportList');
+    if (!listContainer) return;
+
+    if (filtered.length === 0) {
+        listContainer.innerHTML = '<div class="text-center py-5 border rounded-4 bg-white mt-3">' +
+                                  '<i class="bi bi-shield-check text-muted" style="font-size: 3rem;"></i>' +
+                                  '<h5 class="mt-3 text-muted" style="font-weight:700;">No Food Additives Requiring Regulatory Review Were Detected</h5>' +
+                                  '<p class="text-muted mb-0">No food additives matching the search/filters requiring regulatory review were detected.</p>' +
+                                  '</div>';
+        return;
+    }
+
+    var html = '<div class="accordion" id="additiveAccordion">';
+    for (var j = 0; j < filtered.length; j++) {
+        var add = filtered[j];
+        var riskIcon = '🟢';
+        var riskBadgeClass = 'bg-success';
+        if (add.risk_level === 'High Risk') {
+            riskIcon = '🔴';
+            riskBadgeClass = 'bg-danger';
+        } else if (add.risk_level === 'Moderate Risk') {
+            riskIcon = '🟡';
+            riskBadgeClass = 'bg-warning text-dark';
+        }
+
+        var isFssaiOk = add.countries["India (FSSAI)"].status === 'Approved' ? '🟢' : (add.countries["India (FSSAI)"].status === 'Banned' ? '🔴' : '🟡');
+
+        html += '<div class="accordion-item mb-3 border rounded-4 overflow-hidden shadow-sm">';
+        html += '<h2 class="accordion-header">';
+        html += '<button class="accordion-button collapsed px-4 py-3 d-flex align-items-center" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAdd-' + j + '" aria-expanded="false" aria-controls="collapseAdd-' + j + '">';
+        html += '<div class="d-flex align-items-center w-100">';
+        html += '<div class="me-3" style="font-size:1.5rem;">' + riskIcon + '</div>';
+        html += '<div class="text-start">';
+        html += '<h5 class="mb-1" style="font-weight: 700; color: var(--gray-900);">' + escHtml(add.name) + ' <span class="badge bg-secondary ms-2" style="font-size: 11px;">' + escHtml(add.ins_no) + '</span></h5>';
+        html += '<p class="text-muted mb-0 small"><strong>Function:</strong> ' + escHtml(add.category) + ' | <strong>FSSAI Status:</strong> ' + isFssaiOk + ' ' + add.countries["India (FSSAI)"].status + '</p>';
+        html += '</div>';
+        html += '<div class="ms-auto me-3"><span class="badge ' + riskBadgeClass + ' px-3 py-1.5" style="border-radius: 50px;">' + add.risk_level + '</span></div>';
+        html += '</div>';
+        html += '</button></h2>';
+
+        html += '<div id="collapseAdd-' + j + '" class="accordion-collapse collapse" data-bs-parent="#additiveAccordion">';
+        html += '<div class="accordion-body p-4 bg-white border-top">';
+        
+        html += '<div class="row g-4 mb-4">';
+        html += '<div class="col-md-6">';
+        html += '<table class="table table-sm table-borderless">';
+        html += '<tr><td style="width:180px;"><strong>Purpose / Function:</strong></td><td class="text-muted">' + escHtml(add.purpose) + '</td></tr>';
+        html += '<tr><td><strong>Safety Status:</strong></td><td class="text-muted">' + escHtml(add.safety_status) + '</td></tr>';
+        html += '<tr><td><strong>Acceptable Daily Intake (ADI):</strong></td><td class="text-muted">' + escHtml(add.adi) + '</td></tr>';
+        html += '<tr><td><strong>Maximum permitted limit:</strong></td><td class="text-muted">' + escHtml(add.max_limit) + '</td></tr>';
+        html += '</table></div>';
+        
+        html += '<div class="col-md-6">';
+        html += '<table class="table table-sm table-borderless">';
+        html += '<tr><td style="width:180px;"><strong>Detected quantity:</strong></td><td class="text-muted">' + escHtml(add.detected_qty) + '</td></tr>';
+        html += '<tr><td><strong>Exceeds limit:</strong></td><td class="text-muted">' + escHtml(add.exceeds_limit) + '</td></tr>';
+        html += '<tr><td><strong>Allergy warnings:</strong></td><td class="text-muted"><span class="text-danger">' + escHtml(add.allergy_warnings) + '</span></td></tr>';
+        html += '<tr><td><strong>Special populations:</strong></td><td class="text-muted"><span class="text-warning">' + escHtml(add.special_population_warnings) + '</span></td></tr>';
+        html += '</table></div></div>';
+
+        html += '<div class="p-3 bg-light rounded-4 mb-4 border">';
+        html += '<h6 style="font-weight:700;"><i class="bi bi-journal-text me-1 text-primary"></i>Scientific Notes &amp; Observations</h6>';
+        html += '<p class="text-muted mb-0 small" style="line-height:1.6;">' + escHtml(add.scientific_notes) + '</p>';
+        html += '<h6 class="mt-3" style="font-weight:700;"><i class="bi bi-heart-pulse-fill me-1 text-danger"></i>Health Considerations</h6>';
+        html += '<p class="text-muted mb-0 small" style="line-height:1.6;">' + escHtml(add.health_considerations) + '</p>';
+        html += '</div>';
+
+        html += '<h6 class="mb-3" style="font-weight:700;"><i class="bi bi-globe2 me-1 text-success"></i>Country-wise Approval &amp; Limits</h6>';
+        html += '<div class="table-responsive-container mb-2">';
+        html += '<table class="table table-hover align-middle mb-0" style="font-size:13px;">';
+        html += '<thead class="table-light"><tr>';
+        html += '<th>Country / Region</th>';
+        html += '<th>Regulatory Authority</th>';
+        html += '<th>Approval Status</th>';
+        html += '<th>Maximum Allowed Limit</th>';
+        html += '<th>Notes</th>';
+        html += '</tr></thead><tbody>';
+
+        var cKeys = Object.keys(add.countries);
+        for (var k = 0; k < cKeys.length; k++) {
+            var cName = cKeys[k];
+            var cInfo = add.countries[cName];
+            var cBadge = 'bg-secondary';
+            var cIcon = '⚪';
+            if (cInfo.status === 'Approved') {
+                cBadge = 'bg-success-subtle text-success border border-success-subtle';
+                cIcon = '🟢';
+            } else if (cInfo.status === 'Restricted') {
+                cBadge = 'bg-warning-subtle text-warning border border-warning-subtle';
+                cIcon = '🟡';
+            } else if (cInfo.status === 'Banned') {
+                cBadge = 'bg-danger-subtle text-danger border border-danger-subtle';
+                cIcon = '🔴';
+            }
+
+            var cNotes = cInfo.notes || 'Data Not Available';
+
+            html += '<tr>';
+            html += '<td><strong>' + escHtml(cName) + '</strong></td>';
+            html += '<td><span class="text-muted">' + escHtml(cInfo.authority) + '</span></td>';
+            html += '<td><span class="badge ' + cBadge + ' px-2.5 py-1" style="font-size:11px;">' + cIcon + ' ' + cInfo.status + '</span></td>';
+            html += '<td><code style="font-size:12px;color:var(--gray-700);">' + escHtml(cInfo.limit) + '</code></td>';
+            html += '<td><span class="text-muted small">' + escHtml(cNotes) + '</span></td>';
+            html += '</tr>';
+        }
+        html += '</tbody></table></div>';
+
+        if (add.recalls && add.recalls.length > 0) {
+            html += '<div class="alert alert-danger mt-3 mb-0" style="border-radius:12px; border: 1px solid rgba(220,53,69,0.2);">';
+            html += '<h6 style="font-weight:700;"><i class="bi bi-exclamation-octagon-fill me-1"></i>Historic Recall Safety Alert!</h6>';
+            html += '<p class="small mb-2">Recall actions have been reported internationally for matching contaminants/brands:</p>';
+            html += '<ul class="mb-0 ps-3 small">';
+            for (var rc = 0; rc < add.recalls.length; rc++) {
+                var rNotice = add.recalls[rc];
+                html += '<li><strong>Brand:</strong> ' + escHtml(rNotice.brand) + ' - ' + escHtml(rNotice.product) + ' | <strong>Hazard:</strong> ' + escHtml(rNotice.hazard) + ' (' + escHtml(rNotice.reason) + ') - ' + escHtml(rNotice.action) + '</li>';
+            }
+            html += '</ul></div>';
+        }
+
+        html += '</div></div></div>';
+    }
+    html += '</div>';
+    listContainer.innerHTML = html;
+
+    if (!window.areAdditiveEventsBound) {
+        document.getElementById('additiveSearchInput').addEventListener('input', renderAdditiveReport);
+        document.getElementById('filterCountry').addEventListener('change', renderAdditiveReport);
+        document.getElementById('filterStatus').addEventListener('change', renderAdditiveReport);
+        document.getElementById('filterRisk').addEventListener('change', renderAdditiveReport);
+        document.getElementById('sortAdditives').addEventListener('change', renderAdditiveReport);
+        
+        document.getElementById('btnExportCSV').addEventListener('click', function(e) {
+            e.preventDefault();
+            exportAdditiveReport('csv');
+        });
+        document.getElementById('btnExportPDF').addEventListener('click', function(e) {
+            e.preventDefault();
+            exportAdditiveReport('pdf');
+        });
+        
+        window.areAdditiveEventsBound = true;
+    }
+}
+
+function renderAdditiveStats(additives) {
+    var statsContainer = document.getElementById('additiveStatsContainer');
+    if (!statsContainer) return;
+
+    var total = additives.length;
+    var approved = 0;
+    var restricted = 0;
+    var banned = 0;
+
+    var stricterCountries = new Set();
+
+    additives.forEach(function(a) {
+        var fssaiStatus = a.countries["India (FSSAI)"].status;
+        
+        if (a.safety_status === 'Approved') approved++;
+        else if (a.safety_status === 'Restricted') restricted++;
+        else if (a.safety_status === 'Banned') banned++;
+
+        Object.keys(a.countries).forEach(function(cName) {
+            var cStatus = a.countries[cName].status;
+            if (fssaiStatus === 'Approved' && (cStatus === 'Restricted' || cStatus === 'Banned')) {
+                stricterCountries.add(cName.replace(/ \(.+\)/g, ''));
+            } else if (fssaiStatus === 'Restricted' && cStatus === 'Banned') {
+                stricterCountries.add(cName.replace(/ \(.+\)/g, ''));
+            }
+        });
+    });
+
+    var compScore = 100;
+    if (total > 0) {
+        compScore = Math.max(0, 100 - (banned * 25) - (restricted * 10));
+    }
+
+    var strictStr = stricterCountries.size > 0 ? Array.from(stricterCountries).join(', ') : 'None';
+
+    var html = '';
+    html += '<div class="col-md-3 col-sm-6"><div class="stat-card-custom">';
+    html += '<div class="stat-card-icon" style="background:var(--gradient-primary);"><i class="bi bi-funnel-fill"></i></div>';
+    html += '<div><span class="text-muted small" style="font-size:11px;">Total Detected</span><h4 class="mb-0 mt-1" style="font-weight:800; font-size:1.4rem;">' + total + '</h4></div>';
+    html += '</div></div>';
+
+    html += '<div class="col-md-3 col-sm-6"><div class="stat-card-custom">';
+    html += '<div class="stat-card-icon bg-success"><i class="bi bi-shield-check"></i></div>';
+    html += '<div><span class="text-muted small" style="font-size:11px;">Approved / Restr / Ban</span>';
+    html += '<h4 class="mb-0 mt-1" style="font-weight:800; font-size:1.15rem;"><span class="text-success">' + approved + '</span> / <span class="text-warning">' + restricted + '</span> / <span class="text-danger">' + banned + '</span></h4></div>';
+    html += '</div></div>';
+
+    var scoreColor = 'text-success';
+    if (compScore < 40) scoreColor = 'text-danger';
+    else if (compScore < 70) scoreColor = 'text-warning';
+
+    html += '<div class="col-md-3 col-sm-6"><div class="stat-card-custom">';
+    html += '<div class="stat-card-icon bg-info" style="background:linear-gradient(135deg,#06B6D4,#0891B2);"><i class="bi bi-activity"></i></div>';
+    html += '<div><span class="text-muted small" style="font-size:11px;">Compliance Score</span><h4 class="mb-0 mt-1 ' + scoreColor + '" style="font-weight:800; font-size:1.4rem;">' + compScore + '%</h4></div>';
+    html += '</div></div>';
+
+    html += '<div class="col-md-3 col-sm-6"><div class="stat-card-custom">';
+    html += '<div class="stat-card-icon bg-warning" style="background:linear-gradient(135deg,#F59E0B,#D97706);"><i class="bi bi-exclamation-circle"></i></div>';
+    html += '<div><span class="text-muted small" style="font-size:11px;">Stricter Markets</span><h4 class="mb-0 mt-1 text-truncate" style="font-weight:800; font-size:1.05rem; max-width:140px;" title="' + strictStr + '">' + strictStr + '</h4></div>';
+    html += '</div></div>';
+
+    statsContainer.innerHTML = html;
+}
+
+function exportAdditiveReport(type) {
+    var additives = window.activeAdditiveReport || [];
+    if (additives.length === 0) {
+        alert("No additive data available to export.");
+        return;
+    }
+
+    if (type === 'csv') {
+        var csvRows = [];
+        csvRows.push(["Additive Name", "INS/E Number", "Function", "Safety Status", "Risk Level", "FSSAI Limit", "US FDA Status", "EU EFSA Status", "Scientific Notes"]);
+        
+        additives.forEach(function(a) {
+            csvRows.push([
+                '"' + a.name.replace(/"/g, '""') + '"',
+                '"' + a.ins_no.replace(/"/g, '""') + '"',
+                '"' + a.category.replace(/"/g, '""') + '"',
+                '"' + a.safety_status.replace(/"/g, '""') + '"',
+                '"' + a.risk_level.replace(/"/g, '""') + '"',
+                '"' + a.countries["India (FSSAI)"].limit.replace(/"/g, '""') + '"',
+                '"' + a.countries["USA (FDA)"].status.replace(/"/g, '""') + '"',
+                '"' + a.countries["European Union (EFSA)"].status.replace(/"/g, '""') + '"',
+                '"' + a.scientific_notes.replace(/"/g, '""') + '"'
+            ]);
+        });
+
+        var csvContent = csvRows.map(function(e) { return e.join(","); }).join("\n");
+        var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", "additive_regulatory_report.csv");
+        link.click();
+    } else if (type === 'pdf') {
+        var printWin = window.open('', '_blank');
+        var html = '';
+        html += '<html><head><title>Additive Regulatory Report - Label Padegha Sabh</title>';
+        html += '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">';
+        html += '<style>';
+        html += 'body { font-family: "Outfit", sans-serif; padding: 40px; color: #333; }';
+        html += 'h1 { font-weight:800; color:#111; margin-bottom: 5px; }';
+        html += 'h2 { font-weight:700; color:#444; margin-top:30px; font-size:1.3rem; border-bottom: 2px solid #ddd; padding-bottom:8px; }';
+        html += 'table { font-size: 12.5px; }';
+        html += 'th { background-color: #f8f9fa !important; }';
+        html += '.risk-badge { font-weight:700; padding:4px 10px; border-radius:50px; font-size:11px; }';
+        html += '.risk-High { background-color: #fde8e8; color: #9b1c1c; }';
+        html += '.risk-Moderate { background-color: #fef3c7; color: #92400e; }';
+        html += '.risk-Low { background-color: #def7ec; color: #03543f; }';
+        html += '@media print { .no-print { display:none; } }';
+        html += '</style></head><body onload="window.print()">';
+        
+        html += '<div class="d-flex justify-content-between align-items-center mb-4">';
+        html += '<div><h1>Additive Regulatory Report</h1><p class="text-muted">Label Padegha Sabh - Clean Label Analytics</p></div>';
+        html += '<button class="btn btn-primary no-print" onclick="window.print()"><i class="bi bi-printer"></i> Print</button>';
+        html += '</div>';
+
+        html += '<hr>';
+        html += '<h4>Total Additives Detected: ' + additives.length + '</h4>';
+        
+        additives.forEach(function(a) {
+            html += '<h2>' + a.name + ' (' + a.ins_no + ') - <span class="risk-badge risk-' + a.risk_level.split(' ')[0] + '">' + a.risk_level + '</span></h2>';
+            html += '<p><strong>Functional Class:</strong> ' + a.category + ' | <strong>Purpose:</strong> ' + a.purpose + '</p>';
+            html += '<p><strong>Scientific Notes:</strong> ' + a.scientific_notes + '</p>';
+            html += '<p><strong>Health &amp; Safety Considerations:</strong> ' + a.health_considerations + '</p>';
+            
+            html += '<table class="table table-bordered table-sm mt-2">';
+            html += '<thead class="table-light"><tr><th>Country</th><th>Regulatory Authority</th><th>Status</th><th>Max Limit</th></tr></thead><tbody>';
+            Object.keys(a.countries).forEach(function(cName) {
+                var cInfo = a.countries[cName];
+                html += '<tr><td>' + cName + '</td><td>' + cInfo.authority + '</td><td>' + cInfo.status + '</td><td>' + cInfo.limit + '</td></tr>';
+            });
+            html += '</tbody></table>';
+        });
+
+        html += '</body></html>';
+        printWin.document.write(html);
+        printWin.document.close();
+    }
 }

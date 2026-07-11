@@ -118,14 +118,17 @@ function initDarkMode() {
 function checkAuth() {
     const isLoggedIn = localStorage.getItem('isLoggedIn');
     const currentPage = window.location.pathname.split('/').pop();
-    const protectedPages = ['dashboard.html', 'ai-chat.html', 'health-profile.html', 'product-result.html', 'scanner.html'];
+    const protectedPages = ['dashboard.html', 'ai-chat.html', 'health-profile.html', 'product-result.html', 'scanner.html', 'mart.html'];
 
     if (!isLoggedIn && protectedPages.includes(currentPage)) {
         // Auto-login in demo mode for seamless testing
         localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('userId', '1');
         localStorage.setItem('userName', 'Demo User');
         localStorage.setItem('userEmail', 'demo@labelpadega.com');
         console.log('[Auth] Auto-login for demo mode');
+    } else if (localStorage.getItem('isLoggedIn') === 'true' && !localStorage.getItem('userId')) {
+        localStorage.setItem('userId', '1');
     }
 }
 

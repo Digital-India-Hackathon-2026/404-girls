@@ -587,6 +587,140 @@
             gap: 10px;
             font-size: 14px;
         }
+
+        /* Collapsible ingredients styling */
+        .ingredients-collapsed-container {
+            max-height: 240px;
+            overflow: hidden;
+            position: relative;
+            transition: max-height 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .ingredients-collapsed-container.expanded {
+            max-height: 2000px;
+        }
+        .ingredients-fade-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: linear-gradient(to top, rgba(255,255,255,1), rgba(255,255,255,0));
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .ingredients-collapsed-container.expanded .ingredients-fade-overlay {
+            opacity: 0;
+        }
+        .toggle-ingredients-btn {
+            background: transparent;
+            border: 1px solid var(--gray-200);
+            color: var(--primary-emerald);
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: 50px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin: 15px auto 0;
+            transition: all 0.3s;
+            outline: none;
+        }
+        .toggle-ingredients-btn:hover {
+            background: rgba(16, 185, 129, 0.05);
+            border-color: var(--primary-emerald);
+        }
+
+        /* Ingredient interactive chip styling */
+        .ingredient-chip-interactive {
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .ingredient-chip-interactive:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* Bottom Sheet Modal Styling */
+        .bottom-sheet-modal .modal-content {
+            border-radius: 24px;
+            border: 1px solid var(--gray-200);
+            box-shadow: var(--shadow-2xl);
+            overflow: hidden;
+        }
+        .custom-nav-tabs {
+            border-bottom: 1px solid var(--gray-200);
+        }
+        .custom-nav-tabs .nav-link {
+            color: var(--gray-500);
+            font-weight: 600;
+            border: none;
+            border-bottom: 3px solid transparent;
+            padding: 12px 20px;
+            transition: all 0.3s;
+        }
+        .custom-nav-tabs .nav-link:hover {
+            color: var(--primary-emerald);
+            background: transparent;
+        }
+        .custom-nav-tabs .nav-link.active {
+            color: var(--primary-emerald);
+            background: transparent;
+            border-bottom-color: var(--primary-emerald);
+        }
+
+        /* Stats Cards Styling */
+        .stat-card-custom {
+            background: var(--gray-100);
+            border-radius: 16px;
+            padding: 18px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            border: 1px solid var(--gray-200);
+            height: 100%;
+        }
+        .stat-card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #fff;
+            flex-shrink: 0;
+        }
+
+        /* Horizontal Scrollable Table on Mobile */
+        .table-responsive-container {
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid var(--gray-200);
+        }
+        
+        /* Slide-up for mobile bottom-sheet modal */
+        @media (max-width: 768px) {
+            .bottom-sheet-modal .modal-dialog {
+                position: fixed;
+                margin: 0;
+                width: 100%;
+                height: 85%;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                max-width: 100%;
+                transform: translateY(100%);
+                transition: transform 0.3s ease-out;
+            }
+            .bottom-sheet-modal.show .modal-dialog {
+                transform: translateY(0);
+            }
+            .bottom-sheet-modal .modal-content {
+                height: 100%;
+                border-radius: 24px 24px 0 0;
+                border: none;
+            }
+        }
     </style>
 </head>
 
@@ -603,6 +737,7 @@
             <a href="dashboard.html" class="nav-item"><i class="bi bi-grid"></i><span>Dashboard</span></a>
             <a href="scanner.html" class="nav-item active"><i class="bi bi-upc-scan"></i><span>Scan Product</span></a>
             <a href="ai-chat.html" class="nav-item"><i class="bi bi-chat-dots"></i><span>AI Chat</span></a>
+            <a href="mart.html" class="nav-item"><i class="bi bi-shop"></i><span>Mart</span></a>
             <a href="health-profile.html" class="nav-item"><i class="bi bi-person-circle"></i><span>Health
                     Profile</span></a>
             <a href="#" class="nav-item" onclick="logout()"><i class="bi bi-box-arrow-right"></i><span>Logout</span></a>
@@ -672,6 +807,138 @@
             <!-- Product Content (injected by JS) -->
             <div id="productContainer" style="display: none;">
                 <!-- Dynamic content injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Sheet Modal for Regulations & Additive Reports -->
+    <div class="modal fade bottom-sheet-modal" id="regulatoryBottomSheet" tabindex="-1" aria-labelledby="regulatoryBottomSheetLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="factor-icon-lg" style="width: 40px; height: 40px; border-radius: 10px; background: var(--gradient-primary); display: flex; align-items: center; justify-content: center; color: #fff;">
+                            <i class="bi bi-globe-americas"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title" id="regulatoryBottomSheetLabel" style="font-weight: 700; color: var(--gray-900);">Regulatory &amp; Safety Reports</h5>
+                            <p class="text-muted mb-0" style="font-size: 11px;">Cross-country safety status &amp; additive limits</p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <!-- Navigation Tabs -->
+                    <ul class="nav nav-tabs custom-nav-tabs px-3 pt-2" id="bottomSheetTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="food-regs-tab" data-bs-toggle="tab" data-bs-target="#food-regs-pane" type="button" role="tab" aria-controls="food-regs-pane" aria-selected="true">
+                                <i class="bi bi-shield-check me-1"></i>Food Regulations
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="additive-report-tab" data-bs-toggle="tab" data-bs-target="#additive-report-pane" type="button" role="tab" aria-controls="additive-report-pane" aria-selected="false">
+                                <i class="bi bi-file-earmark-bar-graph me-1"></i>Additive Regulatory Report
+                            </button>
+                        </li>
+                    </ul>
+
+                    <!-- Tab Contents -->
+                    <div class="tab-content p-4" id="bottomSheetTabsContent">
+                        <!-- Pane 1: Food Regulations (Existing) -->
+                        <div class="tab-pane fade show active" id="food-regs-pane" role="tabpanel" aria-labelledby="food-regs-tab" tabindex="0">
+                            <div id="foodRegulationsTabContent">
+                                <!-- Existing Global Regulatory Status content injected here -->
+                            </div>
+                        </div>
+
+                        <!-- Pane 2: Additive Regulatory Report (New) -->
+                        <div class="tab-pane fade" id="additive-report-pane" role="tabpanel" aria-labelledby="additive-report-tab" tabindex="0">
+                            <!-- Statistics Cards -->
+                            <div class="row g-3 mb-4" id="additiveStatsContainer">
+                                <!-- Dynamic stats injected here -->
+                            </div>
+
+                            <!-- Search, Filter, Sort, Export Toolbar -->
+                            <div class="toolbar-container mb-4 p-3 bg-light rounded-4 border">
+                                <div class="row g-3 align-items-center">
+                                    <div class="col-md-3">
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                                            <input type="text" id="additiveSearchInput" class="form-control border-start-0 ps-0" placeholder="Search additive name or INS...">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <select id="filterCountry" class="form-select">
+                                            <option value="">Filter by Country</option>
+                                            <option value="India (FSSAI)">India (FSSAI)</option>
+                                            <option value="USA (FDA)">USA (FDA)</option>
+                                            <option value="European Union (EFSA)">European Union (EFSA)</option>
+                                            <option value="United Kingdom">United Kingdom</option>
+                                            <option value="Canada">Canada</option>
+                                            <option value="Australia / New Zealand">Australia / NZ</option>
+                                            <option value="Japan">Japan</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <select id="filterStatus" class="form-select">
+                                            <option value="">Filter by Approval</option>
+                                            <option value="Approved">🟢 Approved</option>
+                                            <option value="Restricted">🟡 Restricted</option>
+                                            <option value="Banned">🔴 Banned</option>
+                                            <option value="Not Available">⚪ Not Available</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <select id="filterRisk" class="form-select">
+                                            <option value="">Filter by Risk</option>
+                                            <option value="Low Risk">🟢 Low Risk</option>
+                                            <option value="Moderate Risk">🟡 Moderate Risk</option>
+                                            <option value="High Risk">🔴 High Risk</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <select id="sortAdditives" class="form-select">
+                                            <option value="alphabetical">Sort Alphabetically</option>
+                                            <option value="risk-desc">Sort by Risk (High → Low)</option>
+                                            <option value="strictness">Sort by Strictness</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-1 text-end">
+                                        <div class="dropdown">
+                                            <button class="btn btn-outline-secondary dropdown-toggle w-100" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <i class="bi bi-download"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                <li><a class="dropdown-item" href="#" id="btnExportCSV"><i class="bi bi-filetype-csv me-2"></i>Export CSV</a></li>
+                                                <li><a class="dropdown-item" href="#" id="btnExportPDF"><i class="bi bi-file-pdf me-2"></i>Export PDF (Print)</a></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Detailed Additive Cards/Accordions -->
+                            <div id="additiveReportList">
+                                <!-- Dynamic rows / cards injected here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ingredient Detail Info Modal -->
+    <div class="modal fade" id="ingredientDetailModal" tabindex="-1" aria-labelledby="ingredientDetailModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 20px; border: 1px solid var(--gray-200); box-shadow: var(--shadow-xl);">
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title" id="ingredientDetailModalLabel" style="font-weight:700;">Ingredient Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="ingredientDetailModalBody" style="padding: 24px;">
+                    <!-- Content injected by JS -->
+                </div>
             </div>
         </div>
     </div>

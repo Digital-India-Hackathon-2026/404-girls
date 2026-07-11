@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mart - Label Padegha Sabh</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="stylesheet" href="assets/css/dashboard-styles.css">
+    <link rel="stylesheet" href="assets/css/mart-styles.css">
+    <link rel="stylesheet" href="assets/css/product-styles.css">
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="brand-container">
+                <i class="bi bi-upc-scan brand-icon"></i>
+                <span class="brand-text">LPS</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="dashboard.html" class="nav-item">
+                <i class="bi bi-grid"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="scanner.html" class="nav-item">
+                <i class="bi bi-upc-scan"></i>
+                <span>Scan Product</span>
+            </a>
+            <a href="ai-chat.html" class="nav-item">
+                <i class="bi bi-chat-dots"></i>
+                <span>AI Chat</span>
+            </a>
+            <a href="mart.html" class="nav-item active">
+                <i class="bi bi-shop"></i>
+                <span>Mart</span>
+            </a>
+            <a href="health-profile.html" class="nav-item">
+                <i class="bi bi-person-circle"></i>
+                <span>Health Profile</span>
+            </a>
+            <a href="#" class="nav-item" onclick="logout()">
+                <i class="bi bi-box-arrow-right"></i>
+                <span>Logout</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-avatar">
+                    <i class="bi bi-person"></i>
+                </div>
+                <div class="user-details">
+                    <p class="user-name" id="userName">User Name</p>
+                    <p class="user-email" id="userEmail">user@email.com</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Top Navbar -->
+        <nav class="top-navbar">
+            <div class="navbar-left">
+                <button class="menu-toggle" id="menuToggle">
+                    <i class="bi bi-list"></i>
+                </button>
+                <h1 class="page-title">Decision-Aware Mart</h1>
+            </div>
+            <div class="navbar-right">
+                <div class="search-bar">
+                    <i class="bi bi-search"></i>
+                    <input type="text" id="martSearchInput" placeholder="Search product or brand..." oninput="filterProducts()">
+                </div>
+                <div class="navbar-icons">
+                    <button class="icon-btn" onclick="toggleCartDrawer()" data-tooltip="Cart">
+                        <i class="bi bi-cart3"></i>
+                        <span class="badge" id="cartBadgeCount" style="display:none;">0</span>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Mart Views -->
+        <div class="dashboard-container">
+            <!-- View Tabs (Shop vs Order History) -->
+            <ul class="nav nav-pills mb-4" id="martTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="shop-tab" data-bs-toggle="tab" data-bs-target="#shop" type="button" role="tab">
+                        <i class="bi bi-shop"></i> Browse Shop
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="orders-tab" data-bs-toggle="tab" data-bs-target="#orders" type="button" role="tab" onclick="loadOrderHistory()">
+                        <i class="bi bi-receipt"></i> Order History
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="martTabContent">
+                <!-- Shop Tab View -->
+                <div class="tab-pane fade show active" id="shop" role="tabpanel">
+                    <div class="mart-layout">
+                        <!-- Catalog & Categories -->
+                        <div class="catalog-container">
+                            <!-- Category Buttons -->
+                            <div class="category-tabs" id="categoryTabsContainer">
+                                <button class="category-tab-btn active" onclick="selectCategory('all')">
+                                    All Products
+                                </button>
+                                <button class="category-tab-btn" onclick="selectCategory('Baby Foods')">
+                                    Baby Foods
+                                </button>
+                                <button class="category-tab-btn" onclick="selectCategory('Instant Noodles')">
+                                    Noodles
+                                </button>
+                                <button class="category-tab-btn" onclick="selectCategory('Chocolates')">
+                                    Chocolates
+                                </button>
+                                <button class="category-tab-btn" onclick="selectCategory('Soft Drinks')">
+                                    Beverages
+                                </button>
+                                <button class="category-tab-btn" onclick="selectCategory('Chips')">
+                                    Snacks
+                                </button>
+                            </div>
+
+                            <!-- Products Grid -->
+                            <div class="catalog-section" id="productsCatalogGrid">
+                                <!-- Loaded dynamically -->
+                                <div class="text-center py-5 w-100">
+                                    <div class="spinner-border text-success" role="status"></div>
+                                    <p class="mt-2 text-muted">Loading Mart Products...</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sidebar Cart Drawer -->
+                        <div class="cart-drawer-container">
+                            <div class="cart-drawer-card">
+                                <div class="cart-drawer-header">
+                                    <h3 class="cart-drawer-title">
+                                        <i class="bi bi-cart3"></i> Shopping Cart 
+                                        <span id="cartCountLabel" style="display:none;">0</span>
+                                    </h3>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="clearCart()">Clear</button>
+                                </div>
+                                <div class="cart-drawer-body" id="cartDrawerBody">
+                                    <div class="cart-empty-state">
+                                        <i class="bi bi-cart-x"></i>
+                                        <p class="mb-0">Your cart is empty.</p>
+                                        <small class="text-muted">Personalized warnings will show once you add items.</small>
+                                    </div>
+                                </div>
+                                <div class="cart-drawer-footer" id="cartDrawerFooter" style="display:none;">
+                                    <!-- Dynamic Allergen Warnings for items in cart -->
+                                    <div class="cart-warnings-banner" id="cartWarningsBanner" style="display:none;">
+                                        <i class="bi bi-exclamation-triangle-fill"></i>
+                                        <div>
+                                            <strong class="d-block">Health Alerts Checked</strong>
+                                            <span id="cartWarningsText">Warnings appear here...</span>
+                                        </div>
+                                    </div>
+                                    <div class="cart-total-row">
+                                        <span>Subtotal</span>
+                                        <span id="cartSubtotal">₹0.00</span>
+                                    </div>
+                                    <div class="cart-total-row grand-total">
+                                        <span>Total</span>
+                                        <span id="cartTotal">₹0.00</span>
+                                    </div>
+                                    <button class="btn btn-checkout-premium mt-3" onclick="openCheckoutModal()">
+                                        <i class="bi bi-shield-check"></i> Verify & Checkout
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Orders History Tab View -->
+                <div class="tab-pane fade" id="orders" role="tabpanel">
+                    <div class="orders-section">
+                        <div class="order-history-header">
+                            <h3><i class="bi bi-clock-history"></i> Your Orders</h3>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="loadOrderHistory()">
+                                <i class="bi bi-arrow-clockwise"></i> Refresh
+                            </button>
+                        </div>
+                        <div id="orderHistoryContainer">
+                            <div class="text-center py-5">
+                                <div class="spinner-border text-success" role="status"></div>
+                                <p class="mt-2 text-muted">Retrieving Order Logs...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Checkout Modal -->
+    <div class="modal fade" id="checkoutModal" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0" style="border-radius:24px;">
+                <div class="modal-header border-0 pb-0">
+                    <h3 class="modal-title font-weight-bold" id="checkoutModalTitle">🛒 Secure Checkout</h3>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <!-- Progress Steps -->
+                    <div class="checkout-steps">
+                        <div class="checkout-step-indicator active" id="stepIndicator-1">
+                            <div class="step-num">1</div>
+                            <div class="step-label">Health Review</div>
+                        </div>
+                        <div class="checkout-step-indicator" id="stepIndicator-2">
+                            <div class="step-num">2</div>
+                            <div class="step-label">Delivery</div>
+                        </div>
+                        <div class="checkout-step-indicator" id="stepIndicator-3">
+                            <div class="step-num">3</div>
+                            <div class="step-label">Confirm</div>
+                        </div>
+                    </div>
+
+                    <!-- Step 1 Panel: Health & Allergen Warning review -->
+                    <div class="checkout-step-panel active" id="checkoutStep-1">
+                        <h4 class="mb-3">Personalized Risk Scan</h4>
+                        <p class="text-muted small">Our intelligence engine scanned your profile. Please review warnings:</p>
+                        
+                        <div class="checkout-warnings-list" id="checkoutWarningsList">
+                            <!-- Warnings load here -->
+                        </div>
+
+                        <div class="form-check mb-4" id="checkoutLiabilityCheck" style="display:none;">
+                            <input class="form-check-input border-warning" type="checkbox" id="agreeToBuyAnyway">
+                            <label class="form-check-label text-warning small font-weight-bold" for="agreeToBuyAnyway">
+                                I acknowledge these allergen/dietary alerts and wish to proceed anyway.
+                            </label>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-secondary flex-grow-1" data-bs-dismiss="modal">Cancel</button>
+                            <button class="btn btn-success flex-grow-1" id="btnNextToStep2" onclick="checkoutNextStep(2)">Proceed</button>
+                        </div>
+                    </div>
+
+                    <!-- Step 2 Panel: Shipping Form -->
+                    <div class="checkout-step-panel" id="checkoutStep-2" style="display:none;">
+                        <h4 class="mb-3">Shipping & Payment</h4>
+                        <form id="shippingForm" onsubmit="submitCheckout(event)">
+                            <div class="mb-3">
+                                <label class="form-label small text-muted">Full Name</label>
+                                <input type="text" class="form-control form-control-sm" id="shippingName" required placeholder="e.g. Bhanu Sri">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small text-muted">Delivery Address</label>
+                                <textarea class="form-control form-control-sm" id="shippingAddress" rows="2" required placeholder="e.g. Flat 404, Digital India Residency, New Delhi"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small text-muted">Mock Card Payment</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text"><i class="bi bi-credit-card"></i></span>
+                                    <input type="text" class="form-control" placeholder="1234 5678 1234 5678" required>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2 mt-4">
+                                <button type="button" class="btn btn-outline-secondary flex-grow-1" onclick="checkoutNextStep(1)">Back</button>
+                                <button type="submit" class="btn btn-success flex-grow-1">Place Order</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Step 3 Panel: Success Confirmation -->
+                    <div class="checkout-step-panel text-center py-4" id="checkoutStep-3" style="display:none;">
+                        <div class="mb-3">
+                            <i class="bi bi-check-circle-fill text-success" style="font-size:4rem;"></i>
+                        </div>
+                        <h4 class="mb-2">Order Placed Successfully!</h4>
+                        <p class="text-muted small">Your order has been recorded. The Decision Intelligence engine has archived this transaction.</p>
+                        <div class="alert alert-success d-inline-block py-2 px-4 mb-4 small font-weight-bold">
+                            Order ID: #<span id="orderSuccessId">0</span>
+                        </div>
+                        <button class="btn btn-success w-100" data-bs-dismiss="modal" onclick="finishCheckout()">Done</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Product Evaluation Modal -->
+    <div class="modal fade" id="quickEvalModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg modal-lg-custom">
+            <div class="modal-content border-0" style="border-radius:24px; overflow:hidden;">
+                <div class="modal-header border-0 bg-light-gradient pb-0">
+                    <h3 class="modal-title font-weight-bold" id="evalProductTitle">Product Evaluation</h3>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 bg-light-gradient">
+                    <!-- Embed loading container same as product-result page -->
+                    <div id="loadingContainer" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 40vh; gap: 1rem;">
+                        <div class="loading-icon-ring" style="width:50px; height:50px;"></div>
+                        <div>
+                            <h4 style="font-weight:700;margin-bottom:0.5rem; text-align:center;">Analyzing Product...</h4>
+                        </div>
+                        <div class="loading-steps" id="loadingSteps" style="display:flex; flex-direction:column; gap:0.25rem;">
+                            <div class="loading-step active" id="step-fetch" style="font-size:12px;">
+                                <div class="step-dot" style="width:8px; height:8px;"></div>Fetching product details
+                            </div>
+                            <div class="loading-step" id="step-extract" style="font-size:12px;">
+                                <div class="step-dot" style="width:8px; height:8px;"></div>Extracting ingredients & allergens
+                            </div>
+                            <div class="loading-step" id="step-regulatory" style="font-size:12px;">
+                                <div class="step-dot" style="width:8px; height:8px;"></div>Checking regulatory compliance
+                            </div>
+                            <div class="loading-step" id="step-personalize" style="font-size:12px;">
+                                <div class="step-dot" style="width:8px; height:8px;"></div>Comparing to user profile
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Embed a mini version of product-result layout -->
+                    <div id="productContainer" style="display:none;">
+                        <!-- Concern Score & Bio Header -->
+                        <div class="row g-4 mb-4">
+                            <div class="col-md-7">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="product-avatar-large" style="width:80px; height:80px; background:#fff; border-radius:16px; border:1px solid #eee; display:flex; align-items:center; justify-content:center;">
+                                        <i class="bi bi-box" style="font-size:2rem; color:#ccc;"></i>
+                                    </div>
+                                    <div>
+                                        <h4 id="evalBrandName" style="font-size:12px; font-weight:700; color:var(--gray-400); text-transform:uppercase; margin:0;">Brand</h4>
+                                        <h2 id="evalProductName" style="font-size:20px; font-weight:800; margin:0;">Product Name</h2>
+                                        <p id="evalBarcodeVal" class="text-muted small" style="margin:0;">Barcode: 890000</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-5">
+                                <div class="concern-score-block p-3 d-flex align-items-center gap-3" style="background:#fff; border-radius:16px; border:1px solid #eee;">
+                                    <div class="score-ring-container" style="width:60px; height:60px;">
+                                        <svg class="score-ring-svg" width="60" height="60">
+                                            <circle class="score-ring-bg" cx="30" cy="30" r="25" stroke-width="6"/>
+                                            <circle class="score-ring-fill" id="evalScoreRing" cx="30" cy="30" r="25" stroke-width="6" stroke-dasharray="157" stroke-dashoffset="157"/>
+                                        </svg>
+                                        <div class="score-ring-text" style="display:flex; align-items:center; justify-content:center; position:absolute; inset:0;">
+                                            <span class="score-ring-num" id="evalScoreNum" style="font-size:16px; font-weight:800;">0</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h4 style="font-size:13px; font-weight:700; margin:0;">Concern Score</h4>
+                                        <p class="text-muted small mb-0" id="evalScoreLevel">Scanning...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Warnings & Health Notes -->
+                        <div class="card p-3 mb-3 border-0 shadow-sm" style="border-radius:16px;">
+                            <h4 style="font-size:14px; font-weight:700;" class="mb-2"><i class="bi bi-shield-exclamation text-warning"></i> Personalized Health Scan</h4>
+                            <div id="evalPersonalWarnings" style="display:flex; flex-direction:column; gap:8px;">
+                                <div class="text-success small"><i class="bi bi-check-circle"></i> Clean scan! No conflicts found.</div>
+                            </div>
+                        </div>
+
+                        <!-- Key Differences -->
+                        <div class="card p-3 border-0 shadow-sm" style="border-radius:16px;" id="evalDiffContainer">
+                            <h4 style="font-size:14px; font-weight:700;" class="mb-2"><i class="bi bi-globe-americas text-success"></i> Global Regulatory Insights</h4>
+                            <p id="evalDifferences" class="small text-muted" style="margin:0;">Loading compliance data...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="assets/js/app.js"></script>
+    <script src="assets/js/mart.js"></script>
+</body>
+
+</html>

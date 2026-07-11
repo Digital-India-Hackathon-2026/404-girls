@@ -484,6 +484,14 @@ def analyze_product(barcode, user_profile=None):
     result["regulatory"] = get_regulatory_status(ingredients, product.get("regulatory_raw", {}))
     logger.info(f"[Pipeline] {len(result['regulatory'])} regulatory concerns")
 
+    try:
+        from utils.excel_parser import get_additives_report
+        result["additive_regulatory_report"] = get_additives_report(ingredients)
+        logger.info(f"[Pipeline] Loaded {len(result['additive_regulatory_report'])} additives from Excel report")
+    except Exception as e:
+        logger.error(f"[Pipeline] Error running Excel additive report: {e}")
+        result["additive_regulatory_report"] = []
+
     result["news"]         = fetch_recall_news(product.get("name", ""))
     result["nova"]         = get_nova_level(product.get("nova_group"))
     result["health_score"] = calculate_health_score(nutrition)

@@ -88,6 +88,46 @@ def init_db():
         )
     """)
 
+    # Orders table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS orders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            total_price REAL NOT NULL,
+            items_count INTEGER NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    """)
+
+    # Order items table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS order_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            order_id INTEGER NOT NULL,
+            barcode TEXT NOT NULL,
+            product_name TEXT NOT NULL,
+            brand TEXT NOT NULL,
+            quantity INTEGER NOT NULL,
+            price REAL NOT NULL,
+            FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+        )
+    """)
+
+    # Seed default demo user if not exists
+    cursor.execute("SELECT id FROM users WHERE id = 1")
+    if not cursor.fetchone():
+        # Register demo user with ID = 1
+        password_hash, salt = hash_password("password")
+        cursor.execute(
+            "INSERT INTO users (id, full_name, email, password_hash, salt) VALUES (?, ?, ?, ?, ?)",
+            (1, "Demo User", "demo@labelpadega.com", password_hash, salt)
+        )
+        cursor.execute(
+            "INSERT INTO health_profiles (user_id) VALUES (?)",
+            (1,)
+        )
+
     conn.commit()
     conn.close()
 
@@ -321,6 +361,65 @@ def get_all_allergens() -> List[Dict]:
     allergens = [dict(row) for row in cursor.fetchall()]
     conn.close()
     return allergens
+
+
+def create_order(user_id: int, total_price: float, items_count: int, items: List[Dict]) -> int:
+    """Create a new order with its items in a transaction."""
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        # Insert order
+        cursor.execute(
+            "INSERT INTO orders (user_id, total_price, items_count) VALUES (?, ?, ?)",
+            (user_id, total_price, items_count)
+        )
+        order_id = cursor.lastrowid
+        
+        # Insert items
+        for item in items:
+            cursor.execute(
+                """INSERT INTO order_items (order_id, barcode, product_name, brand, quantity, price)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (
+                    order_id,
+                    item.get("barcode"),
+                    item.get("product_name"),
+                    item.get("brand"),
+                    item.get("quantity"),
+                    item.get("price")
+                )
+            )
+        conn.commit()
+        return order_id
+    except Exception as e:
+        conn.rollback()
+        raise e
+    finally:
+        conn.close()
+
+
+def get_user_orders(user_id: int) -> List[Dict]:
+    """Get all orders and their items for a user."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        # Get orders
+        cursor.execute(
+            "SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC",
+            (user_id,)
+        )
+        orders = [dict(row) for row in cursor.fetchall()]
+        
+        # Get items for each order
+        for order in orders:
+            cursor.execute(
+                "SELECT * FROM order_items WHERE order_id = ?",
+                (order["id"],)
+            )
+            order["items"] = [dict(row) for row in cursor.fetchall()]
+        return orders
+    finally:
+        conn.close()
 
 
 # Initialize the database when module is imported

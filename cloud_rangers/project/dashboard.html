@@ -40,6 +40,10 @@
                 <i class="bi bi-chat-dots"></i>
                 <span>AI Chat</span>
             </a>
+            <a href="mart.html" class="nav-item">
+                <i class="bi bi-shop"></i>
+                <span>Mart</span>
+            </a>
             <a href="health-profile.html" class="nav-item">
                 <i class="bi bi-person-circle"></i>
                 <span>Health Profile</span>
@@ -173,6 +177,57 @@
                 </div>
             </div>
 
+            <!-- Report an Issue Section -->
+            <div class="row mt-5 mb-3">
+                <div class="col-12">
+                    <h2 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin-bottom: 8px;">
+                        <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Report an Issue
+                    </h2>
+                    <p class="text-muted small">Encountered food safety violations, misleading claims, or unhygienic local outlets? Lodge complaints directly to official authorities.</p>
+                </div>
+            </div>
+            
+            <div class="row g-4 mb-5">
+                <!-- Card 1: FSSAI -->
+                <div class="col-lg-4 col-md-6 col-12">
+                    <div class="summary-card h-100" style="cursor: pointer; border: 1px solid var(--gray-200); transition: all 0.3s; padding: 20px; display: flex; flex-direction: column;" onclick="window.open('https://foscos.fssai.gov.in/misleading-report', '_blank', 'noopener,noreferrer')">
+                        <div class="card-icon" style="background: rgba(220, 38, 38, 0.1); color: #dc2626; width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <i class="bi bi-shield-fill-x" style="font-size: 1.5rem;"></i>
+                        </div>
+                        <div class="card-content mt-3">
+                            <h3 class="card-title" style="font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; color: var(--text-primary);">Report to FSSAI</h3>
+                            <p class="card-description" style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; margin: 0;">Report unsafe food, excessive chemical additives, adulteration, contamination, expired products, or incorrect ingredient labels.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: Consumer Helpline -->
+                <div class="col-lg-4 col-md-6 col-12">
+                    <div class="summary-card h-100" style="cursor: pointer; border: 1px solid var(--gray-200); transition: all 0.3s; padding: 20px; display: flex; flex-direction: column;" onclick="window.open('https://consumerhelpline.gov.in', '_blank', 'noopener,noreferrer')">
+                        <div class="card-icon" style="background: rgba(13, 110, 253, 0.1); color: #0d6efd; width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <i class="bi bi-shield-lock-fill" style="font-size: 1.5rem;"></i>
+                        </div>
+                        <div class="card-content mt-3">
+                            <h3 class="card-title" style="font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; color: var(--text-primary);">Consumer Complaint</h3>
+                            <p class="card-description" style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; margin: 0;">Report false or misleading claims, deceptive advertisements, and consumer rights violations.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3: State Department -->
+                <div class="col-lg-4 col-md-6 col-12">
+                    <div class="summary-card h-100" style="cursor: pointer; border: 1px solid var(--gray-200); transition: all 0.3s; padding: 20px; display: flex; flex-direction: column;" data-bs-toggle="modal" data-bs-target="#stateDepartmentModal">
+                        <div class="card-icon" style="background: rgba(5, 150, 105, 0.1); color: #059669; width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <i class="bi bi-building-fill-exclamation" style="font-size: 1.5rem;"></i>
+                        </div>
+                        <div class="card-content mt-3">
+                            <h3 class="card-title" style="font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; color: var(--text-primary);">State Food Safety Department</h3>
+                            <p class="card-description" style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; margin: 0;">Contact your local Food Safety Department for complaints about unhygienic food establishments, food poisoning, expired products, or local food safety violations.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Empty State Card -->
             <div class="empty-state-card">
                 <i class="bi bi-upc-scan"></i>
@@ -240,6 +295,42 @@
                         Search
                     </button>
                     <div id="searchResults" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- State Food Safety Department Modal -->
+    <div class="modal fade" id="stateDepartmentModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 20px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title font-weight-bold" style="font-size: 1.25rem; font-weight: 700; color: var(--text-primary);">
+                        <i class="bi bi-geo-alt-fill text-success me-2"></i>State Food Safety Department
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-4">
+                        <label for="stateSelect" class="form-label small text-muted font-weight-bold" style="font-weight: 600;">Select Your State / UT</label>
+                        <select class="form-select" id="stateSelect" onchange="handleStateSelection()" style="border-radius: 10px; border: 1px solid var(--gray-300); padding: 10px; font-size: 0.9rem;">
+                            <option value="" selected disabled>Choose state...</option>
+                            <option value="delhi">Delhi</option>
+                            <option value="maharashtra">Maharashtra</option>
+                            <option value="karnataka">Karnataka</option>
+                            <option value="tamilnadu">Tamil Nadu</option>
+                            <option value="telangana">Telangana</option>
+                            <option value="up">Uttar Pradesh</option>
+                            <option value="other">Other State / UT</option>
+                        </select>
+                    </div>
+                    <div id="stateContactPlaceholder" class="p-3 text-center" style="display: none; background: var(--gray-50); border-radius: 12px; border: 1px dashed var(--gray-300);">
+                        <i class="bi bi-info-circle-fill text-secondary mb-2" style="font-size: 1.5rem; display: block;"></i>
+                        <p class="mb-0 text-secondary small" style="font-weight: 500;">State-specific contact details will be integrated in a future update.</p>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-secondary w-100" data-bs-dismiss="modal" style="border-radius: 10px; padding: 10px; font-weight: 600;">Close</button>
                 </div>
             </div>
         </div>
