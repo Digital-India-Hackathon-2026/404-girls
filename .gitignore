@@ -137,3 +137,7 @@ docker-compose.override.yml
 # ==========================
 reports/
 *.pdf
+
+*.db
+*.sqlite
+*.sqlite3
